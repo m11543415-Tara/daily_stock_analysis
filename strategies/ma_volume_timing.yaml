@@ -1,0 +1,69 @@
+name: ma_volume_timing
+display_name: 均线量价买点策略
+description: 基于均线多头排列和量价关系识别最佳买入时机
+
+category: trend
+core_rules: [1, 2, 3, 4, 6]
+
+required_tools:
+  - get_daily_history
+  - analyze_trend
+  - get_realtime_quote
+
+aliases: [均线买点, 量价买点, 缩量回踩]
+
+default_active: true
+default_router: false
+default_priority: 10
+market_regimes: [trending_up, consolidation]
+
+instructions: |
+  **均线量价买点策略**
+
+  本策略基于均线系统和量价关系，识别最佳低风险买入时机。
+
+  **第一步：判断大趋势（必须满足）**
+  使用 `analyze_trend` 检查均线排列：
+  - MA5 > MA10 > MA20 > MA60 = 标准多头排列，可以买入
+  - MA5、MA10、MA20 粘合（差距<3%）= 蓄势待发，等待突破
+  - 均线空头排列（MA5 < MA10 < MA20）= 禁止买入，直接跳过
+
+  **第二步：识别买点类型**
+  使用 `get_daily_history` 获取近20日数据，判断以下买点：
+
+  买点A（最优）：缩量回踩均线
+  - 价格回调到MA5或MA10附近（偏离<3%）
+  - 近3日成交量持续萎缩，低于5日均量的85%
+  - 今日出现止跌迹象（小阳线或十字星）
+  - 评分加15分，标注"缩量回踩买点"
+
+  买点B（较优）：放量突破压力位
+  - 今日成交量是5日均量的1.5倍以上
+  - 价格突破近20日高点
+  - 收盘价在今日振幅上方80%以上
+  - 评分加10分，标注"放量突破买点"
+
+  买点C（观察）：均线金山谷
+  - MA5从下方上穿MA20，形成金叉
+  - 成交量开始温和放大
+  - 评分加8分，标注"均线金叉买点"
+
+  **第三步：量价关系验证**
+  必须通过以下验证才能确认买点：
+  - 量增价涨：上涨日成交量 > 下跌日成交量1.2倍 → 确认资金在买入
+  - 量缩价跌：回调时成交量萎缩 → 确认洗盘不是出货
+  - 量增价跌（出货信号）：出现此形态必须在buy_reason中注明风险
+
+  **第四步：禁止买入条件（一票否决）**
+  以下情况直接在buy_reason注明"不建议买入"：
+  - 均线空头排列
+  - 近5日内出现量增价跌且跌幅>3%
+  - 价格距MA5超过15%（追高风险）
+  - 今日涨幅已超过9%
+
+  **评分调整建议：**
+  - 满足买点A：sentiment_score +15
+  - 满足买点B：sentiment_score +10
+  - 满足买点C：sentiment_score +8
+  - 均线空头排列：sentiment_score -20
+  - 出现量增价跌：sentiment_score -15
