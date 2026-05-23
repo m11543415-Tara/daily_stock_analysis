@@ -1,4 +1,5 @@
-yamlname: chan_ma_fusion
+yaml
+name: chan_ma_fusion
 display_name: 缠论均线融合策略
 description: 结合缠论买卖点和均线量价系统，双重验证提高胜率
 
